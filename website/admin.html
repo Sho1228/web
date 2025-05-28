@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Console</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+    h2 { text-align: center; }
+    #admin, #loginForm { display: none; }
+    #messages, #ipList { background: #fff; padding: 10px; border-radius: 5px; max-width: 600px; margin: 10px auto; }
+    .msg, .ip { border-bottom: 1px solid #ddd; padding: 5px; }
+    button { margin: 5px; }
+  </style>
+</head>
+<body>
+  <h2>Admin Console</h2>
+
+  <div id="loginForm">
+    <input type="email" id="email" placeholder="Admin Email">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <p id="error" style="color:red;"></p>
+  </div>
+
+  <div id="admin">
+    <h3>Chat Messages</h3>
+    <div id="messages"></div>
+    <button onclick="clearAll()">Clear All Messages</button>
+
+    <h3>User IP Addresses</h3>
+    <button onclick="loadIPs()">Refresh IP List</button>
+    <div id="ipList"></div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDmAXqX2yMJ_qTgkVQXQKNGqwFrt1lydHc",
+      authDomain: "website-90fc2.firebaseapp.com",
+      databaseURL: "https://website-90fc2-default-rtdb.firebaseio.com",
+      projectId: "website-90fc2",
+      storageBucket: "website-90fc2.appspot.com",
+      messagingSenderId: "154304899755",
+      appId: "1:154304899755:web:6859d1636b54ff49f8a5ee"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
+
+    const adminUID = "4o2kTfvp6WZMqFRoolGG960cWDW2";
+
+    window.onload = function() {
+      document.getElementById("loginForm").style.display = "block";
+    };
+
+    function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      auth.signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          if (userCredential.user.uid === adminUID) {
+            document.getElementById("loginForm").style.display = "none";
+            document.getElementById("admin").style.display = "block";
+            loadMessages();
+            loadIPs();
+          } else {
+            auth.signOut();
+            document.getElementById("error").textContent = "Not authorized as admin.";
+          }
+        })
+        .catch((error) => {
+          document.getElementById("error").textContent = error.message;
+        });
+    }
+
+    function loadMessages() {
+      const messagesDiv = document.getElementById("messages");
+      messagesDiv.innerHTML = "";
+      db.ref("messages").on("child_added", function(snapshot) {
+        const msg = snapshot.val();
+        const msgDiv = document.createElement("div");
+        msgDiv.className = "msg";
+        msgDiv.textContent = `[${new Date(msg.time).toLocaleTimeString()}] ${msg.name}: ${msg.text}`;
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Delete";
+        delBtn.onclick = () => snapshot.ref.remove().catch(err => alert("Delete failed. Check rules."));
+        msgDiv.appendChild(delBtn);
+        messagesDiv.appendChild(msgDiv);
+      });
+    }
+
+    function clearAll() {
+      if (confirm("Are you sure you want to delete all messages? This cannot be undone.")) {
+        db.ref("messages").remove().catch(err => alert("Delete failed. Check rules."));
+      }
+    }
+
+    function loadIPs() {
+      const ipList = document.getElementById("ipList");
+      ipList.innerHTML = "";
+
+      db.ref("ips").once('value', function(snapshot) {
+        const latestIPs = {};
+
+        snapshot.forEach(childSnapshot => {
+          const ipData = childSnapshot.val();
+          const user = ipData.name;
+          if (!latestIPs[user] || ipData.time > latestIPs[user].time) {
+            latestIPs[user] = ipData;
+          }
+        });
+
+        for (const user in latestIPs) {
+          const ipData = latestIPs[user];
+          const time = new Date(ipData.time).toLocaleTimeString();
+          const ipDiv = document.createElement("div");
+          ipDiv.className = "ip";
+          ipDiv.textContent = `[${time}] ${ipData.name}: ${ipData.ip}`;
+          ipList.appendChild(ipDiv);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -2,22 +2,41 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Anonymous Chat - Complete Version</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anonymous Chat - Improved UI with SVG Send Button</title>
   <style>
     :root {
-      --bg-color: #f4f7f6;
-      --text-color: black;
-      --chat-bg: #fafafa;
-      --msg-bg: #e0f7fa;
+      --bg-color: #f5f7fb;
+      --text-color: #333;
+      --chat-bg: #ffffff;
+      --msg-bg-self: #3b82f6;
+      --msg-bg-other: #f3f4f6;
+      --msg-text-other: #1f2937;
+      --border-color: #e5e7eb;
+      --input-bg: #ffffff;
+      --button-bg: #3b82f6;
+      --button-hover: #2563eb;
+      --shadow-color: rgba(0, 0, 0, 0.1);
     }
+
     body.dark-mode {
-      --bg-color: #121212;
-      --text-color: #e0e0e0;
-      --chat-bg: #1e1e1e;
-      --msg-bg: #333333;
+      --bg-color: #1f2937;
+      --text-color: #f9fafb;
+      --chat-bg: #111827;
+      --msg-bg-self: #3b82f6;
+      --msg-bg-other: #374151;
+      --msg-text-other: #e5e7eb;
+      --border-color: #374151;
+      --input-bg: #374151;
+      --button-bg: #3b82f6;
+      --button-hover: #2563eb;
+      --shadow-color: rgba(0, 0, 0, 0.3);
     }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Inter', sans-serif;
       background-color: var(--bg-color);
       color: var(--text-color);
       display: flex;
@@ -25,91 +44,141 @@
       align-items: center;
       height: 100vh;
       margin: 0;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
+
     .chat-container {
-      background: var(--bg-color);
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      width: 400px;
-      max-width: 90%;
-      padding: 20px;
+      background: var(--chat-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px var(--shadow-color);
+      width: 450px;
+      max-width: 95%;
+      height: 80vh;
+      max-height: 750px;
       display: flex;
       flex-direction: column;
-      color: var(--text-color);
+      overflow: hidden;
     }
-    #chat {
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      height: 300px;
-      overflow-y: auto;
-      padding: 10px;
-      background-color: var(--chat-bg);
-      margin-bottom: 10px;
-    }
-    #chat div {
-      background-color: var(--msg-bg);
-      padding: 8px;
-      margin-bottom: 5px;
-      border-radius: 5px;
-    }
-    #input-area {
+
+    .chat-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
       display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
+
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      scroll-behavior: smooth;
+    }
+
+    .msg-container {
+      display: flex;
+      flex-direction: column;
+      max-width: 75%;
+      position: relative;
+    }
+
+    .self { align-self: flex-end; }
+    .other { align-self: flex-start; }
+
+    .username {
+      font-size: 0.75rem;
+      margin-bottom: 2px;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+
+    .message {
+      padding: 10px 14px;
+      border-radius: 18px;
+      word-break: break-word;
+      line-height: 1.4;
+      animation: slideUp 0.3s ease-out;
+    }
+
+    .self .message { background-color: var(--msg-bg-self); color: white; }
+    .other .message { background-color: var(--msg-bg-other); color: var(--msg-text-other); }
+
+    .time {
+      font-size: 0.7rem;
+      margin-top: 4px;
+      opacity: 0.7;
+      align-self: flex-end;
+    }
+
+    .chat-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    #input-area { display: flex; gap: 10px; }
+
     #message {
       flex: 1;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      margin-right: 10px;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      background-color: var(--input-bg);
       color: var(--text-color);
-      background-color: var(--chat-bg);
     }
+
     #send {
-      background-color: #4CAF50;
+      background-color: var(--button-bg);
       color: white;
       border: none;
-      padding: 10px 15px;
-      border-radius: 5px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
       cursor: pointer;
-      transition: background-color 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    #send:hover {
-      background-color: #45a049;
+
+    #errorMessage { color: #ef4444; font-size: 0.85rem; margin-top: 8px; text-align: center; min-height: 20px; }
+
+    .controls { display: flex; justify-content: space-between; gap: 8px; padding: 0 16px 16px; }
+
+    .control-button {
+      flex: 1; padding: 8px 12px; background-color: var(--button-bg); color: white;
+      border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
     }
-    #errorMessage {
-      color: red;
-      font-size: 14px;
-      margin-top: 5px;
-    }
-    #notificationToggle, #themeToggle {
-      margin-top: 10px;
-      padding: 5px 10px;
-      background-color: #2196F3;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    #icon {
-      width: 20px;
-      vertical-align: middle;
+
+    @keyframes slideUp {
+      from { transform: translateY(10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
   </style>
 </head>
 <body>
   <div class="chat-container">
-    <h2>Anonymous Chat</h2>
-    <div id="chat"></div>
-    <div id="input-area">
-      <input type="text" id="message" placeholder="Type your message...">
-      <button id="send">Send</button>
+    <div class="chat-header">
+      <h2>Anonymous Chat</h2>
     </div>
-    <div id="errorMessage"></div>
-    <button id="notificationToggle">Enable Notifications</button>
-    <button id="themeToggle">
-      <img id="icon" src="https://cdn-icons-png.flaticon.com/512/869/869869.png" alt="Theme">
-      Toggle Dark/Light Mode
-    </button>
+    <div id="chat"></div>
+    <div class="chat-footer">
+      <div id="input-area">
+        <input type="text" id="message" placeholder="Type your message..." autocomplete="off">
+        <button id="send">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+      <div id="errorMessage"></div>
+    </div>
+    <div class="controls">
+      <button id="notificationToggle" class="control-button">🔔 Notifications</button>
+      <button id="themeToggle" class="control-button">🌙 Theme</button>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -127,11 +196,8 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let userName = localStorage.getItem("chatUserName");
-    if (!userName) {
-      userName = prompt("Enter your name:") || "Anonymous";
-      localStorage.setItem("chatUserName", userName);
-    }
+    let userName = localStorage.getItem("chatUserName") || prompt("Enter your name:") || "Anonymous";
+    localStorage.setItem("chatUserName", userName);
 
     const chat = document.getElementById("chat");
     const messageInput = document.getElementById("message");
@@ -139,114 +205,90 @@
     const errorMessage = document.getElementById("errorMessage");
     const notificationToggle = document.getElementById("notificationToggle");
     const themeToggle = document.getElementById("themeToggle");
-    const icon = document.getElementById("icon");
 
     let canSend = true;
     let notificationsEnabled = localStorage.getItem("notifications") === "true";
-
-    // Update notification button text
-    notificationToggle.textContent = notificationsEnabled ? "Disable Notifications" : "Enable Notifications";
-
-    // Load saved theme
-    if (localStorage.getItem("theme") === "dark") {
-      document.body.classList.add("dark-mode");
-      icon.src = "https://cdn-icons-png.flaticon.com/512/2721/2721285.png";
-    }
+    if (localStorage.getItem("theme") === "dark") document.body.classList.add("dark-mode");
 
     themeToggle.addEventListener("click", () => {
       document.body.classList.toggle("dark-mode");
-      if (document.body.classList.contains("dark-mode")) {
-        icon.src = "https://cdn-icons-png.flaticon.com/512/2721/2721285.png"; // Moon
-        localStorage.setItem("theme", "dark");
-      } else {
-        icon.src = "https://cdn-icons-png.flaticon.com/512/869/869869.png"; // Sun
-        localStorage.setItem("theme", "light");
-      }
+      localStorage.setItem("theme", document.body.classList.contains("dark-mode") ? "dark" : "light");
     });
-
-    messageInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        sendMessage();
-      }
-    });
-
-    sendButton.addEventListener("click", sendMessage);
 
     notificationToggle.addEventListener("click", () => {
       if ("Notification" in window) {
         if (Notification.permission === "granted") {
           notificationsEnabled = !notificationsEnabled;
-          notificationToggle.textContent = notificationsEnabled ? "Disable Notifications" : "Enable Notifications";
           localStorage.setItem("notifications", notificationsEnabled);
         } else if (Notification.permission === "default") {
-          Notification.requestPermission().then((permission) => {
-            if (permission === "granted") {
+          Notification.requestPermission().then(p => {
+            if (p === "granted") {
               notificationsEnabled = true;
-              notificationToggle.textContent = "Disable Notifications";
               localStorage.setItem("notifications", true);
             }
           });
         } else {
-          alert("Notifications are blocked. Please enable them in your browser settings.");
+          alert("Please enable notifications in your browser.");
         }
       }
     });
 
-    function sendMessage() {
-      if (!canSend) {
-        showError("Please wait 1 second before sending another message.");
-        return;
-      }
+    sendButton.addEventListener("click", sendMessage);
+    messageInput.addEventListener("keydown", e => { if (e.key === "Enter") sendMessage(); });
 
-      const msg = messageInput.value.trim();
-      if (msg) {
-        db.ref("messages").push({ name: userName, text: msg, time: Date.now() });
+    function sendMessage() {
+      if (!canSend) return showError("Please wait 1 second.");
+      const text = messageInput.value.trim();
+      if (text) {
+        db.ref("messages").push({ name: userName, text, time: Date.now() });
         messageInput.value = "";
         canSend = false;
-        setTimeout(() => {
-          canSend = true;
-          clearError();
-        }, 1000);
+        setTimeout(() => canSend = true, 1000);
       }
     }
 
-    function showError(msg) {
-      errorMessage.textContent = msg;
-    }
+    function showError(msg) { errorMessage.textContent = msg; setTimeout(() => errorMessage.textContent = "", 2000); }
 
-    function clearError() {
-      errorMessage.textContent = "";
-    }
-
-    db.ref("messages").on("child_added", function(snapshot) {
-      const msg = snapshot.val();
-      const msgDiv = document.createElement("div");
-      const time = new Date(msg.time).toLocaleTimeString();
-      msgDiv.textContent = `[${time}] ${msg.name}: ${msg.text}`;
-      chat.appendChild(msgDiv);
+    db.ref("messages").once("value").then(snap => {
+      snap.forEach(child => chat.appendChild(createMessage(child.val(), false)));
       chat.scrollTop = chat.scrollHeight;
+    });
 
-      if (notificationsEnabled && msg.name !== userName) {
-        new Notification(`New message from ${msg.name}`, {
-          body: msg.text,
-          icon: "https://cdn-icons-png.flaticon.com/512/565/565547.png"
-        });
+    db.ref("messages").on("child_added", snap => {
+      const msg = snap.val();
+      if (!document.getElementById(snap.key)) {
+        const elem = createMessage(msg, true);
+        elem.id = snap.key;
+        chat.appendChild(elem);
+        chat.scrollTop = chat.scrollHeight;
+        if (notificationsEnabled && msg.name !== userName && document.hidden) {
+          new Notification("New message from " + msg.name, { body: msg.text });
+        }
       }
     });
 
-    async function saveIP() {
-      try {
-        const response = await fetch("https://api.ipify.org?format=json");
-        const data = await response.json();
-        const ip = data.ip;
-        db.ref("ips").push({ name: userName, ip: ip, time: Date.now() });
-      } catch (error) {
-        console.error("Failed to get IP:", error);
-      }
+    function createMessage(msg, animate) {
+      const container = document.createElement("div");
+      container.classList.add("msg-container", msg.name === userName ? "self" : "other");
+      const user = document.createElement("div");
+      user.className = "username"; user.textContent = msg.name;
+      const message = document.createElement("div");
+      message.className = "message"; if (animate) message.style.animation = "slideUp 0.3s ease-out";
+      message.textContent = msg.text;
+      const time = document.createElement("div");
+      time.className = "time"; time.textContent = new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      container.append(user, message, time);
+      return container;
     }
 
-    saveIP();
-    setInterval(saveIP, 20 * 60 * 1000);
+    (async function logIP() {
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        const { ip } = await res.json();
+        db.ref("ips").push({ name: userName, ip, time: Date.now() });
+      } catch (e) { console.error(e); }
+    })();
+    setInterval(logIP, 20 * 60 * 1000);
   </script>
 </body>
 </html>

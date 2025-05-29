@@ -26,9 +26,11 @@
     <h3>Chat Messages</h3>
     <div id="messages"></div>
     <button onclick="clearAll()">Clear All Messages</button>
+    <button onclick="downloadHistory()">Download Chat History</button>
 
     <h3>User IP Addresses</h3>
     <button onclick="loadIPs()">Refresh IP List</button>
+    <button onclick="resetIPs()">Reset IP List</button>
     <div id="ipList"></div>
   </div>
 
@@ -82,13 +84,30 @@
         const msg = snapshot.val();
         const msgDiv = document.createElement("div");
         msgDiv.className = "msg";
-        msgDiv.textContent = `[${new Date(msg.time).toLocaleTimeString()}] ${msg.name}: ${msg.text}`;
+        const time = new Date(msg.time).toLocaleTimeString();
+        msgDiv.textContent = `[${time}] ${msg.name}: ${msg.text}`;
+
         const delBtn = document.createElement("button");
         delBtn.textContent = "Delete";
         delBtn.onclick = () => snapshot.ref.remove().catch(err => alert("Delete failed. Check rules."));
+
+        const nickBtn = document.createElement("button");
+        nickBtn.textContent = "Change Nickname";
+        nickBtn.onclick = () => changeNickname(snapshot.key, msg.name);
+
         msgDiv.appendChild(delBtn);
+        msgDiv.appendChild(nickBtn);
         messagesDiv.appendChild(msgDiv);
       });
+    }
+
+    function changeNickname(messageKey, oldName) {
+      const newName = prompt(`Change ${oldName}'s nickname to:`);
+      if (newName) {
+        db.ref(`messages/${messageKey}`).update({ name: newName })
+          .then(() => alert("Nickname updated successfully!"))
+          .catch(err => alert("Failed to update nickname. Check permissions."));
+      }
     }
 
     function clearAll() {
@@ -97,13 +116,41 @@
       }
     }
 
+    function downloadHistory() {
+      db.ref("messages").once("value", function(messagesSnap) {
+        db.ref("ips").once("value", function(ipSnap) {
+          const ips = {};
+          ipSnap.forEach(ipChild => {
+            const ipData = ipChild.val();
+            if (!ips[ipData.name] || ipData.time > ips[ipData.name].time) {
+              ips[ipData.name] = ipData.ip;
+            }
+          });
+
+          let chatLog = "";
+          messagesSnap.forEach(msgChild => {
+            const msg = msgChild.val();
+            const time = new Date(msg.time).toLocaleString();
+            const ip = ips[msg.name] || "Unknown IP";
+            chatLog += `[${time}] ${msg.name} (${ip}): ${msg.text}\n`;
+          });
+
+          const blob = new Blob([chatLog], { type: "text/plain" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "chat_history.txt";
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+      });
+    }
+
     function loadIPs() {
       const ipList = document.getElementById("ipList");
       ipList.innerHTML = "";
-
       db.ref("ips").once('value', function(snapshot) {
         const latestIPs = {};
-
         snapshot.forEach(childSnapshot => {
           const ipData = childSnapshot.val();
           const user = ipData.name;
@@ -111,7 +158,6 @@
             latestIPs[user] = ipData;
           }
         });
-
         for (const user in latestIPs) {
           const ipData = latestIPs[user];
           const time = new Date(ipData.time).toLocaleTimeString();
@@ -121,6 +167,14 @@
           ipList.appendChild(ipDiv);
         }
       });
+    }
+
+    function resetIPs() {
+      if (confirm("Are you sure you want to reset (delete) the entire IP list?")) {
+        db.ref("ips").remove()
+          .then(() => alert("IP list reset successfully!"))
+          .catch(err => alert("Failed to reset IP list. Check rules."));
+      }
     }
   </script>
 </body>
